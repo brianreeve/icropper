@@ -323,6 +323,9 @@
             var n = this.cropNode, s = n.style;
             this.dragging = (e.target == n) ? 'move' : e.target.className;
             if(this.dragging != 'move'){
+                var regexp = /archor-([a-z]*)/g;
+                var arr = this.dragging.match(regexp);
+                this.dragging = arr[0];
                 var arr = this.dragging.split(' ');
                 this.dragging = arr.pop().split('-')[1];
             }
