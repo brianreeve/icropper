@@ -55,7 +55,7 @@
             node.className = arr.join(' ');
         }
         ,fixEvent: function(evt){
-            evt = evt || event; 
+            evt = evt || event;
             if(!evt.target)evt.target = evt.srcElement;
             if(!evt.keyCode)evt.keyCode = evt.which || evt.charCode;
             if(!evt.pageX){//only for IE
@@ -126,8 +126,26 @@
                 var self = this;
                 //TODO: onerror?
                 this.imageNode.onload = function(){
-                    self._setSize(this.offsetWidth, this.offsetHeight);
-                }
+                    var imgW = this.imageNode.offsetWidth;
+                    var imgH = this.imageNode.offsetHeight;
+                    var domW = this.domNode.offsetWidth;
+                    var domH = 0;//this.domNode.offsetHeight;
+
+                    this.scale = 1;
+                    if (domW) {
+                        this.scale = domW/imgW;
+                        domH = Math.round(this.scale*imgH);
+                    }
+
+                    if (!(domW && domH)) {
+                        domH = imgH;
+                        domW = imgW;
+                    }
+
+                    var h = parseInt(util.style(this.imageNode, 'height'));
+                    var w = parseInt(util.style(this.imageNode, 'width'));
+                    this._setSize(domW, domH);
+                }.bind(this);
             }
             this.imageNode.src = url;
         }
@@ -155,7 +173,7 @@
                 if(w2 >= width)w2 = width;
                 if(h2 >= height)h2 = height;
                 util.style(node, {width: w2 + 'px', height: h2 + 'px'});
-                
+
                 var rateX =  w2/info.w
                     ,rateY = h2/info.h
                     ;
@@ -170,15 +188,17 @@
 
         ,getInfo: function() {
             // summary:
-            //  Get the cropping infomation. Such as being used by server side for real cropping.
+            //  Get the cropping information. Such as being used by server side for real cropping.
+
             return {
-                w: this.cropNode.offsetWidth - 2    //2 is hard code border width
-                ,h: this.cropNode.offsetHeight - 2
-                ,l: parseInt(util.style(this.cropNode, 'left'))
-                ,t: parseInt(util.style(this.cropNode, 'top'))
-                ,cw: this.domNode.offsetWidth //container width
-                ,ch: this.domNode.offsetHeight //container height
+                w: Math.round((this.cropNode.offsetWidth - 2) * 1/this.scale)    //2 is hard code border width
+                ,h: Math.round((this.cropNode.offsetHeight - 2) * 1/this.scale)
+                ,l: Math.round((parseInt(util.style(this.cropNode, 'left'))) * 1/this.scale)
+                ,t: Math.round((parseInt(util.style(this.cropNode, 'top'))) * 1/this.scale)
+                ,cw: Math.round((this.domNode.offsetWidth) * 1/this.scale)  //container width
+                ,ch: Math.round((this.domNode.offsetHeight) * 1/this.scale)  //container height
             };
+
         }
 
         ,onChange: function() {
@@ -203,13 +223,19 @@
             util.connect(document, 'mouseup', this, '_onMouseUp');
             util.connect(document, 'mousemove', this, '_onMouseMove');
             this.image && this.setImage(this.image);
-            
+
             if(this.preview){
                 var self = this;
                 util.each(this.preview, function(node){
                     self.bindPreview(node);
                 });
             }
+
+            //console.debug(this.getInfo());
+            //var readyEvt = document.createEvent("HTMLEvents");
+            //readyEvt.eventType = readyEvt.initEvent("ready", true, true);
+            //this.domNode.dispatchEvent(readyEvt);
+            this.onChange(this.getInfo());
         }
 
         ,_buildRendering: function() {
@@ -241,6 +267,9 @@
             this.domNode.style.width = w + 'px';
             this.domNode.style.height = h + 'px';
 
+            this.imageNode.style.width = w + 'px';
+            this.imageNode.style.height = h + 'px';
+
             var w2, h2;
             if (this.initialSize) {
                 var m = Math.min(w, h, this.initialSize);
@@ -252,7 +281,7 @@
                     var _w2 = h2*this.ratio, _h2 = w2/this.ratio;
                     if(w2 > _w2)w2 = _w2;
                     if(h2 > _h2)h2 = _h2;
-                   
+
                 }
                 w2 += 'px';
                 h2 += 'px';
@@ -270,7 +299,7 @@
 
             s.left = l + 'px';
             s.top = t + 'px';
-     
+
             this._posArchors();
             this._posBlocks();
             this.onChange(this.getInfo());
@@ -385,7 +414,7 @@
             s.left = l + 'px';
             s.top = t + 'px'
         }
-        
+
         ,_doResize: function(e) {
             var m = this.dragging
                 ,s = this.cropNode.style
